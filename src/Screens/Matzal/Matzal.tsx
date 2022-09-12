@@ -102,13 +102,20 @@ export const Matzal = () => {
   const [isMissingCadetModalOpen, setIsMissingCadetModalOpen] = useState(false);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [expanded, setExpanded] = useState<number[]>([]);
-  const [currentTeam, setCurrentTeam] = useState<Unit>();
+  const [currentTeam, setCurrentTeam] = useState<Unit>(null!);
 
   const teamsForSelection = () => {
-    const a = [];
-    companyWithCadets?.children.map((team) => a.push(team.name));
-    a.push("פלוגתי - תצוגת מסדר");
-    return a;
+    const unit: Unit = {
+      id: companyWithCadets.id,
+      name: `פלוגה ${companyWithCadets.name} - תצוגת מסדר`,
+      parent: {} as Unit,
+      children: [],
+    };
+    const teamsWithUnit: Unit[] = JSON.parse(
+      JSON.stringify(companyWithCadets.children)
+    );
+    teamsWithUnit.push(unit);
+    return teamsWithUnit;
   };
 
   useEffect(() => {
@@ -244,33 +251,18 @@ export const Matzal = () => {
       <PageTitle title={'מצ"ל לחייל'} disableBackButton />
       <CenteredFlexBox>
         <MaskedBox>
-          <Stack height="10%" alignItems="center" sx={{ mt: 1, mb: -2 }}>
+          <Stack height="17%" alignItems="center" sx={{ pt: 1, mb: -2 }}>
             {companyWithCadets && (
               <Autocomplete
                 size="small"
-                options={companyWithCadets?.children}
+                sx={{ width: 200 }}
+                options={teamsForSelection()}
                 value={currentTeam}
                 onChange={(event, newValue) => {
                   setCurrentTeam(newValue as Unit);
                 }}
-                renderOption={(props, option) => (
-                  <li
-                    {...props}
-                    style={{ height: "3px", margin: -2, maxHeight: "5px" }}
-                  >
-                    <Typography
-                      // style={{
-                      //   fontSize: "0.7rem",
-                      //   maxHeight: "10px",
-                      //   height: "10px",
-                      // }}
-                      fontSize={10}
-                    >
-                      {option}
-                    </Typography>
-                  </li>
-                )}
-                sx={{ width: 150 }}
+                getOptionLabel={(option) => option.name}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
                 renderInput={(params) => (
                   <TextField
                     {...params}
