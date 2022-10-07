@@ -34,6 +34,7 @@ import { CenteredFlexBox } from "../../Common/CenteredFlexBox/CenteredFlexBox";
 import HOME_BACKGROUND from "../../Images/homeBackground.png";
 import MATZAL_HEADER_SHAPE from "../../Images/matzalHeaderShape.svg";
 import { toast } from "react-toastify";
+import { TeamCadetsList } from "./TeamCadetsList/TeamCadetsList";
 
 const MaskedBox = styled(Box)(({ theme }) => ({
   position: "relative",
@@ -122,7 +123,7 @@ export const Matzal = () => {
     companyWithCadets !== undefined &&
       companyWithCadets !== null &&
       setCurrentTeam(companyWithCadets.children[0]);
-  }, [companyWithCadets]);
+  }, []);
 
   useEffect(() => {
     const fetchCadets = async () => {
@@ -330,112 +331,16 @@ export const Matzal = () => {
       >
         פירוט
       </Typography>
-      {companyWithCadets?.children.map((team) => {
-        const teamCadets = (team.teamCadets ? team.teamCadets : []).sort(
-          cadetCompare
-        );
-        const presentCadetsCount = teamCadets.reduce(
-          (missingAmount, cadet) =>
-            (missingAmount += cadet.attendance.inAttendance ? 1 : 0),
-          0
-        );
 
-        return (
-          <Accordion
-            key={team.id}
-            expanded={expanded.includes(team.id)}
-            onChange={() => teamCadets.length > 0 && toggleExpand(team.id)}
-          >
-            <AccordionSummary
-              expandIcon={teamCadets.length > 0 && <ExpandMore />}
-            >
-              <FormControlLabel
-                aria-label="Enter Name"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleResetTeam(team.id);
-                }}
-                onFocus={(event) => event.stopPropagation()}
-                control={
-                  <IconButton
-                    color="default"
-                    aria-label="Reset team attendance"
-                  >
-                    <Refresh />
-                  </IconButton>
-                }
-                label=""
-              />
-              <Typography sx={{ width: "33%", flexShrink: 0 }}>
-                צוות {team.name}
-              </Typography>
-              <Typography sx={{ color: "text.secondary" }}>
-                {teamCadets.length > 0
-                  ? `${presentCadetsCount}/${teamCadets.length} צוערים`
-                  : "אין צוערים בצוות"}
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              {teamCadets.map((cadet) => (
-                <Stack
-                  key={cadet.id}
-                  direction="row"
-                  alignItems="center"
-                  spacing={2}
-                >
-                  <Checkbox
-                    checked={!!cadet.attendance?.inAttendance}
-                    sx={{
-                      color:
-                        cadet.attendance === null ||
-                        cadet.attendance?.inAttendance === null
-                          ? "default.main"
-                          : "error.main",
-                    }}
-                    color="success"
-                    onChange={(e) => {
-                      cadet.attendance.inAttendance = e.target.checked
-                        ? true
-                        : null;
-                      updateAttendances([cadet.attendance]);
-                    }}
-                  />
+      {currentTeam && (
+        <TeamCadetsList
+          teamCadets={currentTeam.teamCadets}
+          updateAttendances={updateAttendances}
+          setChosenEditCadet={setChosenEditCadet}
+          setIsMissingCadetModalOpen={setIsMissingCadetModalOpen}
+        />
+      )}
 
-                  <Typography fontSize={"1.2rem"}>
-                    {Utilities.getFullName(cadet)}
-                  </Typography>
-
-                  {cadet.attendance.inAttendance ||
-                    (cadet.attendance.inAttendance === false &&
-                    cadet.attendance.reason ? (
-                      <Chip
-                        label={cadet.attendance.reason}
-                        variant="filled"
-                        color="error"
-                        size="small"
-                        onClick={() => {
-                          setChosenEditCadet([cadet]);
-                          setIsMissingCadetModalOpen(true);
-                        }}
-                      />
-                    ) : (
-                      <Chip
-                        label="+"
-                        variant="outlined"
-                        color="default"
-                        size="small"
-                        onClick={() => {
-                          setChosenEditCadet([cadet]);
-                          setIsMissingCadetModalOpen(true);
-                        }}
-                      />
-                    ))}
-                </Stack>
-              ))}
-            </AccordionDetails>
-          </Accordion>
-        );
-      })}
       <AddMissingCadetModal
         teams={companyWithCadets?.children}
         preselectedCadets={chosenEditCadet}
