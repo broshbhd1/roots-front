@@ -180,12 +180,18 @@ export const Matzal = () => {
     let amountOfCadets = 0;
     let amountOfAbsent = 0;
 
-    companyWithCadets?.children.forEach((team) =>
-      team.teamCadets?.forEach((cadet) => {
-        amountOfCadets++;
-        cadet.attendance?.inAttendance === false && amountOfAbsent++;
-      })
-    );
+    currentTeam &&
+      (currentTeam.id === companyWithCadets.id
+        ? companyWithCadets?.children.forEach((team) =>
+            team.teamCadets?.forEach((cadet) => {
+              amountOfCadets++;
+              cadet.attendance?.inAttendance === false && amountOfAbsent++;
+            })
+          )
+        : currentTeam.teamCadets?.forEach((cadet) => {
+            amountOfCadets++;
+            cadet.attendance?.inAttendance === false && amountOfAbsent++;
+          }));
 
     return { amountOfAbsent, amountOfCadets };
   }, [companyWithCadets]);
@@ -209,6 +215,11 @@ export const Matzal = () => {
     try {
       await AttendanceService.updateAttendances(attendances);
       setCompanyWithCadets(await UnitService.getCadetsInCompany());
+      const a = companyWithCadets.children.find(
+        (team) => team.id === currentTeam.id
+      ) as Unit;
+      setCurrentTeam(a as Unit);
+      console.log(a.teamCadets);
     } catch (e) {
       toast.error("אירעה שגיאה בעדכון הצוערים");
     }
@@ -332,14 +343,17 @@ export const Matzal = () => {
         פירוט
       </Typography>
 
-      {currentTeam && (
-        <TeamCadetsList
-          teamCadets={currentTeam.teamCadets}
-          updateAttendances={updateAttendances}
-          setChosenEditCadet={setChosenEditCadet}
-          setIsMissingCadetModalOpen={setIsMissingCadetModalOpen}
-        />
-      )}
+      {currentTeam &&
+        (currentTeam.id === companyWithCadets.id ? (
+          <Typography>הקומפוננטה של שחר</Typography>
+        ) : (
+          <TeamCadetsList
+            teamCadets={currentTeam.teamCadets}
+            updateAttendances={updateAttendances}
+            setChosenEditCadet={setChosenEditCadet}
+            setIsMissingCadetModalOpen={setIsMissingCadetModalOpen}
+          />
+        ))}
 
       <AddMissingCadetModal
         teams={companyWithCadets?.children}
