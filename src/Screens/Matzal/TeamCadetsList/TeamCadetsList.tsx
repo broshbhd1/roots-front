@@ -65,6 +65,7 @@ export const TeamCadetsList = ({
         {teamCadets?.map((cadet) => {
           return (
             <SwipeableListItem
+              key={cadet.id}
               swipeRight={swipeRightOptions(cadet)}
               swipeLeft={swipeLeftOptions(cadet)}
               onSwipeStart={() => setIsSliding(true)}

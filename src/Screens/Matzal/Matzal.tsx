@@ -35,6 +35,8 @@ import HOME_BACKGROUND from "../../Images/homeBackground.png";
 import MATZAL_HEADER_SHAPE from "../../Images/matzalHeaderShape.svg";
 import { toast } from "react-toastify";
 import { TeamCadetsList } from "./TeamCadetsList/TeamCadetsList";
+import { FinalView } from "./FinalView/FinalView";
+import { useAuth } from "../../Hooks/useAuth";
 
 const MaskedBox = styled(Box)(({ theme }) => ({
   position: "relative",
@@ -104,6 +106,7 @@ export const Matzal = () => {
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [expanded, setExpanded] = useState<number[]>([]);
   const [currentTeam, setCurrentTeam] = useState<Unit>(null!);
+  const currentUser = useAuth();
 
   const teamsForSelection = () => {
     const unit: Unit = {
@@ -111,19 +114,31 @@ export const Matzal = () => {
       name: `פלוגה ${companyWithCadets.name} - תצוגת מסדר`,
       parent: {} as Unit,
       children: [],
+      teamCadets: [],
     };
-    const teamsWithUnit: Unit[] = JSON.parse(
-      JSON.stringify(companyWithCadets.children)
-    );
-    teamsWithUnit.push(unit);
+    const teamsWithUnit: Unit[] = [...companyWithCadets.children, unit];
+
     return teamsWithUnit;
   };
 
   useEffect(() => {
-    companyWithCadets !== undefined &&
-      companyWithCadets !== null &&
-      setCurrentTeam(companyWithCadets.children[0]);
-  }, []);
+    if (companyWithCadets !== undefined && companyWithCadets !== null) {
+      if (currentTeam === null) {
+        const currTeam = companyWithCadets.children.find(
+          (team) => team.id === currentUser.team.id
+        ) as Unit;
+
+        setCurrentTeam(currTeam);
+      } else {
+        currentTeam.id !== companyWithCadets.id &&
+          setCurrentTeam(
+            companyWithCadets.children.find(
+              (team) => team.id === currentTeam.id
+            ) as Unit
+          );
+      }
+    }
+  }, [companyWithCadets]);
 
   useEffect(() => {
     const fetchCadets = async () => {
@@ -196,6 +211,22 @@ export const Matzal = () => {
     return { amountOfAbsent, amountOfCadets };
   }, [companyWithCadets]);
 
+  const getNotPresents = () => {
+    const notPresents: Array<any> = [];
+    companyWithCadets?.children.forEach((currTeam) => {
+      notPresents.push(
+        ...(currTeam.teamCadets
+          ?.filter((cadet) => cadet.attendance.inAttendance != true)
+          ?.map((missing) => ({
+            ...missing,
+            teamName: currTeam.name,
+          })) || [])
+      );
+    });
+
+    return notPresents;
+  };
+
   const handleResetTeam = async (teamId: number) => {
     try {
       await AttendanceService.clearTeam(teamId);
@@ -215,11 +246,6 @@ export const Matzal = () => {
     try {
       await AttendanceService.updateAttendances(attendances);
       setCompanyWithCadets(await UnitService.getCadetsInCompany());
-      const a = companyWithCadets.children.find(
-        (team) => team.id === currentTeam.id
-      ) as Unit;
-      setCurrentTeam(a as Unit);
-      console.log(a.teamCadets);
     } catch (e) {
       toast.error("אירעה שגיאה בעדכון הצוערים");
     }
@@ -264,7 +290,7 @@ export const Matzal = () => {
       <CenteredFlexBox>
         <MaskedBox>
           <Stack height="17%" alignItems="center" sx={{ pt: 1, mb: -2 }}>
-            {companyWithCadets && (
+            {companyWithCadets && companyWithCadets.children && (
               <Autocomplete
                 size="small"
                 sx={{ width: 200 }}
@@ -274,7 +300,7 @@ export const Matzal = () => {
                   setCurrentTeam(newValue as Unit);
                 }}
                 getOptionLabel={(option) => option.name}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
+                // isOptionEqualToValue={(option, value) => option.id === value.id}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -345,7 +371,7 @@ export const Matzal = () => {
 
       {currentTeam &&
         (currentTeam.id === companyWithCadets.id ? (
-          <Typography>הקומפוננטה של שחר</Typography>
+          <FinalView notPresents={getNotPresents()}></FinalView>
         ) : (
           <TeamCadetsList
             teamCadets={currentTeam.teamCadets}
